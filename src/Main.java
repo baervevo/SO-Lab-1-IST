@@ -4,9 +4,10 @@ import java.util.PriorityQueue;
 import java.util.Random;
 
 public class Main {
-    static Comparator<Process> QueueComparator = new Process.FCFSComparator();
+    static Comparator<Process> QueueComparator = new Process.SJFComparator();
     static PriorityQueue<Process> processQueue = new PriorityQueue<>(QueueComparator);
     static ArrayList<Process> completedProcesses = new ArrayList<>();
+    static Process.StarvedPredicate starvedPredicate = new Process.StarvedPredicate(1_000);
     static int iterations = 1_000_000;
     static int initialProcesses = 0;
     static Random r = new Random();
@@ -55,11 +56,11 @@ public class Main {
                 .mapToInt(Integer::intValue)
                 .sum();
 
-        int aggregateSumBegunProcessLength = aggregateSumProcessLength + processQueue.stream()
-                .map(Process::getCompleted)
-                .filter(completed -> completed > 0)
-                .mapToInt(Integer::intValue)
-                .sum();
+//        int aggregateSumBegunProcessLength = aggregateSumProcessLength + processQueue.stream()
+//                .map(Process::getCompleted)
+//                .filter(completed -> completed > 0)
+//                .mapToInt(Integer::intValue)
+//                .sum();
 
         double avgCompletion = completedProcesses.stream()
                 .map(process -> process.getCompletionTime() - process.getStartTime())
@@ -73,12 +74,19 @@ public class Main {
                 .average()
                 .orElse(0.0);
 
-        System.out.printf("Average completion time for a process: %f%n" +
-                "Average process wait time since initialization: %f%n" +
+        long starvedProcesses = completedProcesses.stream()
+                .filter(starvedPredicate)
+                .count() + processQueue.stream()
+                .filter(starvedPredicate)
+                .count();
+
+                System.out.printf("Average completion time for a process: %.2f%n" +
+                "Average process wait time since initialization: %.2f%n" +
                 "Sum of completed process lengths: %d%n" +
-                "Sum of begun process lengths (including completed): %d%n" +
+                //"Sum of begun process lengths (including completed): %d%n" +
                 "Total processes served: %d%n" +
-                "Total switch count: %d",
-                avgCompletion, avgWaitTime, aggregateSumProcessLength, aggregateSumBegunProcessLength, completedProcesses.size(), switchCount);
+                "Total switch count: %d%n" +
+                "Starved processes: %d",
+                avgCompletion, avgWaitTime, aggregateSumProcessLength, /*aggregateSumBegunProcessLength,*/ completedProcesses.size(), switchCount, starvedProcesses);
     }
 }

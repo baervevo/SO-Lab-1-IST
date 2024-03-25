@@ -1,6 +1,7 @@
 import java.util.Comparator;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 public class Process {
     private static int processNumber = 1;
@@ -136,6 +137,22 @@ public class Process {
         public int compare(Process o1, Process o2) {
             int res = Integer.compare(o1.getProcessorAccessCount() / this.q, o2.getProcessorAccessCount() / this.q);
             return (res != 0) ? res : baseComparator.compare(o1, o2);
+        }
+    }
+
+    public static class StarvedPredicate implements Predicate<Process> {
+        private final int n;
+
+        public StarvedPredicate(int n) {
+            this.n = n;
+        }
+
+        @Override
+        public boolean test(Process process) {
+            int startTime = process.getStartTime();
+            startTime = (startTime == -1) ? 0 : startTime;
+
+            return Math.abs(process.getProcessInitializationTime() - startTime) > (process.getProcessLength() * n);
         }
     }
 }
